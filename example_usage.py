@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Tuple
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import argparse
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr 
 
@@ -279,4 +280,25 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Анализ корреляций методов GSD-IJ")
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=Path(".") / "data",
+        help="Папка с данными (по умолчанию ./data)",
+    )
+    args = parser.parse_args()
+    
+    if not args.data_dir.exists():
+        raise FileNotFoundError(f"Data directory not found: {args.data_dir}")
+    if not args.data_dir.is_dir():
+        raise NotADirectoryError(f"Data directory is not a directory: {args.data_dir}")
+    
+    DATA_DIR = args.data_dir.resolve()
+    OUT_DIR = DATA_DIR.parent / "out_results" 
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    main(DATA_DIR)
+
