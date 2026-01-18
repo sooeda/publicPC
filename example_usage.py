@@ -63,7 +63,7 @@ def iter_json_files(data_dir: Path) -> List[Tuple[int, str, Path]]:
 
 def run_one_file(json_path: Path, method_label: str, tt: float, ss: float) -> Dict[str, Any]:
     cfg = METHODS_CONFIG[method_label]
-    gsd = GSDIJ_AHP(
+    gsd = Pairwise_comparison(
         debug_mode=False,
         center_method=cfg["center_method"],
         **cfg["kwargs"],
@@ -282,7 +282,7 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Анализ корреляций методов GSD-IJ")
+    parser = argparse.ArgumentParser(description="Анализ корреляций методов")
     parser.add_argument(
         "--data-dir",
         type=Path,
