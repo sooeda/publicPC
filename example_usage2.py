@@ -1,8 +1,11 @@
 import json
 from pathlib import Path
 from typing import Dict, Any, List
+import matplotlib.pyplot as plt
+import seaborn as sns
 import argparse
 import numpy as np
+from scipy.stats import spearmanr
 
 from PairwiseComparison import Pairwise_comparison
 
@@ -72,6 +75,36 @@ def run_methods_for_single_json(
             "weights": weights.tolist(),
             "ranks": ranks.tolist(),
         })
+    method_names = [r["method"] for r in results]
+    num_methods = len(results)
+    ranks_matrix = np.zeros((num_methods, len(results[0]["ranks"])), dtype=float)
+    
+    for i, result in enumerate(results):
+        ranks_matrix[i] = result["ranks"]
+    
+    spearman_corr, _ = spearmanr(ranks_matrix, axis=1)
+    
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(
+        spearman_corr,
+        annot=True,
+        fmt='.2f',            
+        cmap='coolwarm',      
+        xticklabels=method_names,
+        yticklabels=method_names,
+        square=True,
+        cbar_kws={'label': 'Spearman ρ'}
+    )
+    plt.title('Корреляции рангов методов (Spearman)')
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    
+    plt.savefig(output_json_path.with_suffix('.png'), dpi=300, bbox_inches='tight')
+    plt.close()  
+    
+    print(f"Heatmap saved: {output_json_path.with_suffix('.png').resolve()}")
+
 
     output_json_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_json_path, "w", encoding="utf-8") as f:
@@ -84,7 +117,7 @@ if __name__ == "__main__":
         "input",
         nargs="?",
         default="article_example1.json",
-        help="Имя входного JSON (если не указан — берётся article_example1.json)",
+        help="Имя входного JSON",
     )
     args = parser.parse_args()
 
