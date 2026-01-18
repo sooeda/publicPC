@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import Dict, Any, List
-
+import argparse
 import numpy as np
 
 from PairwiseComparison import Pairwise_comparison
@@ -79,10 +79,17 @@ def run_methods_for_single_json(
 
 
 if __name__ == "__main__":
-    INPUT_NAME = "article_example1.json"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "input",
+        nargs="?",
+        default="article_example1.json",
+        help="Имя входного JSON (если не указан — берётся article_example1.json)",
+    )
+    args = parser.parse_args()
 
-    input_fp = DATA_DIR / INPUT_NAME
-    out_fp = OUT_DIR / f"{Path(INPUT_NAME).stem}_methods_center_weights_ranks.json"
+    input_fp = DATA_DIR / args.input
+    out_fp = OUT_DIR / f"{Path(args.input).stem}_methods_center_weights_ranks.json"
 
     run_methods_for_single_json(input_fp, out_fp)
     print(f"Input : {input_fp.resolve()}")
