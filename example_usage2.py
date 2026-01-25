@@ -31,6 +31,7 @@ METHODS_CONFIG = {
 }
 
 
+#Сортировка весов, получение рангов
 def weights_to_ranks_desc(weights: np.ndarray) -> np.ndarray:
 
     sorted_idx = np.argsort(weights)[::-1]
@@ -54,6 +55,7 @@ def run_methods_for_single_json(
 
     results: List[Dict[str, Any]] = []
 
+    # вычисление результатов для каждого метода
     for method_label, cfg in METHODS_CONFIG.items():
         gsd = Pairwise_comparison(
             debug_mode=False,
@@ -83,7 +85,7 @@ def run_methods_for_single_json(
         ranks_matrix[i] = result["ranks"]
     
     spearman_corr, _ = spearmanr(ranks_matrix, axis=1)
-    
+    # построение тепловых карт
     plt.figure(figsize=(10, 8))
     sns.heatmap(
         spearman_corr,

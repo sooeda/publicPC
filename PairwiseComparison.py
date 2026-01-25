@@ -16,13 +16,13 @@ class Pairwise_comparison:
             raise ValueError("alpha_weights must be > 0 for center_sg (log is used)")
 
         self.criteria_names: List[str] = []  # Названия критериев
-        self.dm_ids: List[str] = []  # Идентификаторы экспертов
+        self.dm_ids: List[str] = [] 
         self.lambda_opt: float = 0.0  # Оптимальное значение лямбды
         self.group_interval_matrix: Optional[Tuple[np.ndarray, np.ndarray]] = None
         self.group_weights: Optional[np.ndarray] = None
         self.debug_mode = debug_mode
         
-        # центр и метод расчёта ===
+        # центр и метод расчёта 
         self.center_method = center_method.lower()
         self.center_matrix: Optional[np.ndarray] = None  # Вычисленный центр
         self.tropical_mu: Optional[float] = None
@@ -149,6 +149,7 @@ class Pairwise_comparison:
         return center
 
 
+#функция расчета центра аддитивной обобщающей функцией
     def _compute_aof_center(self) -> np.ndarray:
         center = np.ones((self.n, self.n), dtype=float)
 
@@ -164,7 +165,7 @@ class Pairwise_comparison:
 
         return center
 
-
+#функция расчета центра мультипликативной функцией
     def _compute_mof_center(self) -> np.ndarray:
         mof_matrix = np.ones((self.n, self.n))
 
@@ -178,7 +179,7 @@ class Pairwise_comparison:
                 mof_matrix[i, j] = product
 
         return mof_matrix
-
+#функция расчета центра методом строчных сумм
     def _compute_rowsum_center(self) -> np.ndarray:
         if self.m == 1:
             return self.individual_matrices[0].copy()
@@ -215,7 +216,7 @@ class Pairwise_comparison:
 
         return group_matrix
 
-
+#функция расчета центра тропическим методом
     def _compute_tropical_center(self) -> Tuple[np.ndarray, float]:
         n = self.n
         m = self.m
@@ -238,7 +239,7 @@ class Pairwise_comparison:
 
         mu = self.trop_spectral_radius_trace_formula(B)
         S = self._kleene_star(B / mu)
-
+        #выбор наилучшего\наихудшего дифференцирующего метода
         if self.tropical_variant == "best":
             x = self._best_diff_vector_from_star(S)
         else: 
@@ -249,6 +250,7 @@ class Pairwise_comparison:
         
         self.tropical_mu = mu
         return C, mu
+    
     def _compute_tropical_priority_vector(self, M: np.ndarray, mode: str) -> Tuple[np.ndarray, float]:
         mu = self.trop_spectral_radius_trace_formula(M)
         S = self._kleene_star(M / mu)
@@ -293,6 +295,8 @@ class Pairwise_comparison:
     #         "mu_worst": mu_worst,
     #     }
     #     return x_crisp, C_crisp, info
+
+#функция расчета центра среднегеометрической функцией
     def center_sg(self, normalize_weight_factor: bool = True, eps: float = 1e-12) -> np.ndarray:
         center = np.ones((self.n, self.n), dtype=float)
 
@@ -310,11 +314,8 @@ class Pairwise_comparison:
                     dtype=float
                 )
 
-                # защита от нулей в a_vals
                 loga = np.log(np.clip(a_vals, eps, None))
 
-                # это геометрическое среднее величин w_k * a_k:
-                # a_star = exp(mean_k log(w_k * a_k)) [web:87]
                 mean_log = float(np.mean(loga + logw))
                 a_star = float(np.exp(mean_log))
 
@@ -322,7 +323,7 @@ class Pairwise_comparison:
 
         return center
 
-
+#функция расчета центра гармонической функцией
     def center_gof(self, eps: float = 1e-12) -> np.ndarray:
         center = np.ones((self.n, self.n), dtype=float)
 
@@ -386,7 +387,7 @@ class Pairwise_comparison:
 
         return self.center_matrix
 
-
+#вычисление матрицы стандартного отклонения
     def compute_geometric_std_matrix(self, center_matrix: np.ndarray) -> np.ndarray:
         std_matrix = np.ones((self.n, self.n))
         sum_alpha_sq = sum(a ** 2 for a in self.alpha_weights)
@@ -406,7 +407,7 @@ class Pairwise_comparison:
 
         return std_matrix
 
-
+#вычисление интервальной матрицы
     def compute_group_interval_matrix(self, lambda_val: float) -> Tuple[np.ndarray, np.ndarray]:
         if self.center_matrix is None:
             self.compute_center_matrix()
@@ -430,7 +431,7 @@ class Pairwise_comparison:
 
         return lower_matrix, upper_matrix
 
-
+# вычисление индекса неопределенности
     def compute_indeterminacy_index(self, lower_matrix: np.ndarray, upper_matrix: np.ndarray) -> float:
         if self.n < 2:
             return 1.0
@@ -448,7 +449,7 @@ class Pairwise_comparison:
         if count > 0:
             return product ** (2.0 / (self.n * (self.n - 1)))
         return 1.0
-
+# вычисление индекса удовлетворения
     def compute_group_satisfaction_index(self, lower_matrix: np.ndarray, upper_matrix: np.ndarray) -> float:
         if self.n < 2:
             return 1.0
@@ -469,6 +470,7 @@ class Pairwise_comparison:
 
         return total_satisfaction
     
+    # поиск параметра лямбда
     def solve_model_1(self, t: float = 3.0, s: float = 0.5, n_points: int = 1001) -> float:
         lambdas = np.linspace(0.0, 1.0, n_points)
         feasible_lambdas = []
@@ -507,7 +509,7 @@ class Pairwise_comparison:
             print(f"λ = {lambda_fallback:.4f}, U = {U_final:.4f}, GSI = {GSI_final:.4f}")
 
         return lambda_fallback
-
+# Решение fpp (поиск верхней и нижней матриц)
     def solve_model_2_fpp(self, lower_matrix: np.ndarray, upper_matrix: np.ndarray) -> Tuple[np.ndarray, float]:
         prob = pulp.LpProblem("FPP_Weights", pulp.LpMaximize)
 
@@ -532,7 +534,7 @@ class Pairwise_comparison:
             return weights, float(c_value)
         else:
             raise RuntimeError(f"FPP не удался. Статус: {pulp.LpStatus[prob.status]}")
-
+# Вычисление итоговых весов
     def compute_weight_bounds(self, lower_matrix: np.ndarray, upper_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         w_min = np.zeros(self.n, dtype=float)
         w_max = np.zeros(self.n, dtype=float)
@@ -566,7 +568,7 @@ class Pairwise_comparison:
 
         return w_min, w_max
 
-
+#Запуск анализа
     def run_complete_analysis(self, t: float = 3.0, s: float = 0.5) -> Dict:
         print(f"Вычисление центра (метод: {self.center_method.upper()})...")
         
@@ -764,7 +766,7 @@ class Pairwise_comparison:
                 Ak = Pairwise_comparison.trop_matmul_max_times(Ak, M)
 
         return float(lam)
-
+# сохранение результатов
     def save_interval_and_ranking(self, filepath: str, interval_matrix: Optional[tuple] = None) -> Dict[str, Any]:
         if interval_matrix is None:
             interval_matrix = self.group_interval_matrix

@@ -33,7 +33,9 @@ METHODS_CONFIG = {
     "gof":      {"center_method": "gof",      "kwargs": {}},
 }
 
-FOLDER_RE = re.compile(r"^(?P<n>\d+)_experts_(?P<q>low|medium|high)_consensus$")
+#шаблон названия папки
+FOLDER_RE = re.compile(r"^(?P<n>\d+)_experts_(?P<q>low|medium|high)_contrast$")
+
 
 
 def get_ranks(weights: np.ndarray) -> np.ndarray:
@@ -43,7 +45,7 @@ def get_ranks(weights: np.ndarray) -> np.ndarray:
         ranks[idx] = r
     return ranks
 
-
+#поиск всех файлов
 def iter_json_files(data_dir: Path) -> List[Tuple[int, str, Path]]:
     items: List[Tuple[int, str, Path]] = []
     if not data_dir.exists():
@@ -60,7 +62,7 @@ def iter_json_files(data_dir: Path) -> List[Tuple[int, str, Path]]:
             items.append((n_experts, quality, fp))
     return items
 
-
+# анализ 1 файла
 def run_one_file(json_path: Path, method_label: str, tt: float, ss: float) -> Dict[str, Any]:
     cfg = METHODS_CONFIG[method_label]
     gsd = Pairwise_comparison(
@@ -82,7 +84,7 @@ def run_one_file(json_path: Path, method_label: str, tt: float, ss: float) -> Di
 
     return res
 
-
+# Построение матрицы корреляции
 def corr_matrix_for_file(per_method: Dict[str, Dict[str, Any]], method_order: List[str]) -> np.ndarray:
     ranks = {}
     for m in method_order:
@@ -108,10 +110,12 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
     pair_rows: List[Dict[str, Any]] = []
     all_matrices: List[Dict[str, Any]] = []
 
+    # Анализ всех файлов
     for n_experts, quality, fp in files:
         per_method: Dict[str, Dict[str, Any]] = {}
         all_ok = True
 
+        # Анализ всех методов
         for method_label in method_order:
             try:
                 per_method[method_label] = run_one_file(fp, method_label=method_label, tt=tt, ss=ss)
@@ -139,6 +143,7 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
         if mof_ok:
             mof_ranks = get_ranks(np.array(per_method["mof"]["weights"], dtype=float))
 
+        #Сохранение результатов
         for method_label, res in per_method.items():
             w = np.array(res["weights"], dtype=float)
             rank_corr_vs_mof = np.nan
@@ -209,6 +214,7 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
     pair_df.to_csv(pair_raw_path, index=False, encoding="utf-8")
     print(f"Saved pairwise corr raw: {pair_raw_path}")
 
+# Построение и сохранение тепловых карт
     if not pair_df.empty:
         heatmap_dir = OUT_DIR / "corr_heatmaps"
         heatmap_dir.mkdir(parents=True, exist_ok=True)
@@ -249,7 +255,7 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
 
     if not summary.empty:
         df_plot = summary.copy()
-        df_plot["quality"] = pd.Categorical(df_plot["quality"], categories=["low", "medium", "high"], ordered=True)
+        df_plot["quality"] = pd.Categorical(df_plot["quality"], categories=["high", "medium", "low"], ordered=True)
 
         g = sns.relplot(
             data=df_plot,
@@ -268,14 +274,14 @@ def main(data_dir: Path = DATA_DIR, tt: float = TT, ss: float = SS) -> None:
         )
 
         g.set_axis_labels("Число экспертов", "Spearman(ранги) с MOF")
-        g.set_titles("{col_name} consensus")
+        g.set_titles("{col_name} contrast")
 
         for ax in g.axes.flat:
             for line in ax.lines:
                 line.set_linewidth(2.0)
 
         plt.tight_layout()
-        plt.savefig(OUT_DIR / "rank_corr_vs_mof_by_consensus.png", dpi=200)
+        plt.savefig(OUT_DIR / "rank_corr_vs_mof_by_contrast.png", dpi=200)
         plt.close()
 
 
