@@ -7,6 +7,7 @@ import argparse
 import numpy as np
 from scipy.stats import spearmanr
 
+
 from PairwiseComparison import Pairwise_comparison
 
 
@@ -85,6 +86,23 @@ def run_methods_for_single_json(
         ranks_matrix[i] = result["ranks"]
     
     spearman_corr, _ = spearmanr(ranks_matrix, axis=1)
+    mof_index = method_names.index("mof")
+    if mof_index is not None:
+        mof_corr = spearman_corr[mof_index]  # корреляции mof со всеми методами
+
+        corr_json = {
+            "reference_method": "mof",
+            "correlations": [
+                {"method": name, "spearman_rho": float(rho)}
+                for name, rho in zip(method_names, mof_corr)
+            ],
+        }
+
+    corr_json_path = output_json_path.with_suffix(".mof_spearman_corr.json")
+    with open(corr_json_path, "w", encoding="utf-8") as f:
+        json.dump(corr_json, f, ensure_ascii=False, indent=2)
+
+    print(f"JSON with Spearman correlations vs 'mof' saved: {corr_json_path.resolve()}")
     # построение тепловых карт
     plt.figure(figsize=(10, 8))
     sns.heatmap(
@@ -118,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "input",
         nargs="?",
-        default="article_example1.json",
+        default="article_example2.json",
         help="Имя входного JSON",
     )
     args = parser.parse_args()
